@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../cart/cart_controller.dart';
 import '../domain/product_model.dart';
 import '../data/product_service.dart';
 import 'edit_product_page.dart';
@@ -118,6 +119,19 @@ class ProductCard extends StatelessWidget {
                       );
                     },
                   ),
+
+                  if (!isAdmin)
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          CartController().addProduct(product);
+                          UIFeedback.success(context, 'Producto agregado al carrito');
+                        },
+                        child: const Text('Agregar al carrito'),
+                      ),
+                    ),
+
                   IconButton(
                     icon: const Icon(Icons.delete, color: Colors.red),
                     onPressed: () {
