@@ -4,10 +4,14 @@ import '../../../core/ui/empty_state.dart';
 import '../../../core/ui/error_state.dart';
 import '../../../core/ui/loading_view.dart';
 import '../../../core/auth/role_helper.dart';
+
 import '../../products/domain/product_model.dart';
 import '../../products/data/product_service.dart';
 import '../../products/presentation/product_card.dart';
 import '../../products/presentation/create_product_page.dart';
+
+// 🛒 IMPORT DEL CARRITO
+import '../../cart/presentation/cart_page.dart';
 
 class ProductListPage extends StatefulWidget {
   const ProductListPage({Key? key}) : super(key: key);
@@ -45,6 +49,20 @@ class _ProductListPageState extends State<ProductListPage> {
       appBar: AppBar(
         title: const Text('Productos GML'),
         actions: [
+          // 🛒 BOTÓN DEL CARRITO (CLIENTE)
+          IconButton(
+            icon: const Icon(Icons.shopping_cart),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const CartPage(),
+                ),
+              );
+            },
+          ),
+
+          // ➕ BOTÓN CREAR PRODUCTO (SOLO ADMIN)
           FutureBuilder<bool>(
             future: _isAdminFuture,
             builder: (_, snapshot) {
@@ -73,7 +91,7 @@ class _ProductListPageState extends State<ProductListPage> {
       body: FutureBuilder<List<Product>>(
         future: _productsFuture,
         builder: (context, snapshot) {
-          // ⏳ Loading
+          // ⏳ Cargando
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const LoadingView(
               message: 'Cargando productos...',
@@ -111,7 +129,7 @@ class _ProductListPageState extends State<ProductListPage> {
             );
           }
 
-          // 📦 Data
+          // 📦 Datos
           final products = snapshot.data ?? [];
 
           if (products.isEmpty) {
@@ -122,7 +140,7 @@ class _ProductListPageState extends State<ProductListPage> {
             );
           }
 
-          // ✅ List
+          // ✅ Lista de productos
           return FutureBuilder<bool>(
             future: _isAdminFuture,
             builder: (_, adminSnapshot) {
@@ -136,12 +154,11 @@ class _ProductListPageState extends State<ProductListPage> {
                     return ProductCard(
                       product: products[i],
                       isAdmin: isAdmin,
-                      onRefresh: _reloadProducts, // ✅ OBLIGATORIO
+                      onRefresh: _reloadProducts,
                     );
                   },
                 ),
               );
-
             },
           );
         },

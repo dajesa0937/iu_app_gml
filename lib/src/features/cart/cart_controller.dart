@@ -1,4 +1,4 @@
-import 'cart_item.dart';
+import 'domain/cart_item.dart';
 import '../products/domain/product_model.dart';
 
 class CartController {

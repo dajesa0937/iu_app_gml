@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../cart/cart_controller.dart';
+import '../../cart/data/cart_service.dart';
+import '../../../core/ui/ui_feedback.dart';
 import '../domain/product_model.dart';
 import '../data/product_service.dart';
 import 'edit_product_page.dart';
-import '../../../core/ui/ui_feedback.dart';
-import '../../../core/ui/confirm_dialog.dart';
 
 class ProductCard extends StatelessWidget {
   final Product product;
@@ -20,20 +19,15 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool hasStock = product.stock > 0;
+    final cart = CartService();
 
     return Card(
-      elevation: 3,
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// Nombre
             Text(
               product.name,
               style: const TextStyle(
@@ -42,131 +36,93 @@ class ProductCard extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
 
-            /// Categoría
-            Text(
-              product.category,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.black54,
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            /// Descripción
-            Text(
-              product.description,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 13),
-            ),
+            Text('\$ ${product.price.toStringAsFixed(0)}'),
 
             const SizedBox(height: 12),
 
-            /// Precio + stock
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  _formatPrice(product.price),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                  ),
+            // 👤 CLIENTE → AGREGAR AL CARRITO
+            if (!isAdmin)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.add_shopping_cart),
+                  label: const Text('Agregar al carrito'),
+                  onPressed: () {
+                    cart.addProduct(product);
+                    UIFeedback.success(context, 'Producto agregado');
+                  },
                 ),
+              ),
 
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: hasStock
-                        ? Colors.green.shade100
-                        : Colors.red.shade100,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    hasStock ? 'Stock: ${product.stock}' : 'Agotado',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: hasStock ? Colors.green : Colors.red,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            /// Acciones ADMIN
-            if (isAdmin) ...[
-              const SizedBox(height: 8),
+            // 👑 ADMIN → EDITAR / ELIMINAR
+            if (isAdmin)
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   IconButton(
                     icon: const Icon(Icons.edit, color: Colors.blue),
-                    onPressed: () {
-                      Navigator.push(
+                    onPressed: () async {
+                      final updated = await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) =>
                               EditProductPage(product: product),
                         ),
                       );
+
+                      if (updated == true) {
+                        onRefresh();
+                      }
                     },
                   ),
-
-                  if (!isAdmin)
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          CartController().addProduct(product);
-                          UIFeedback.success(context, 'Producto agregado al carrito');
-                        },
-                        child: const Text('Agregar al carrito'),
-                      ),
-                    ),
-
                   IconButton(
                     icon: const Icon(Icons.delete, color: Colors.red),
                     onPressed: () {
-                      _confirmDelete(context, product.id);
+                      _confirmDelete(context);
                     },
                   ),
                 ],
               ),
-            ],
           ],
         ),
       ),
     );
   }
 
-  /// Confirmación + borrado
-  Future<void> _confirmDelete(BuildContext context, String id) async {
-    final confirmed = await ConfirmDialog.show(
+  void _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
       context: context,
-      title: 'Eliminar producto',
-      message: '¿Seguro que deseas eliminar este producto?',
-      confirmText: 'Eliminar',
+      builder: (_) => AlertDialog(
+        title: const Text('Eliminar producto'),
+        content: const Text(
+          '¿Seguro que deseas eliminar este producto?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Eliminar',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
     );
 
-    if (!confirmed) return;
-
-    try {
-      await ProductService().deleteProduct(id);
-      UIFeedback.success(context, 'Producto eliminado');
-    } catch (_) {
-      UIFeedback.error(context, 'Error al eliminar el producto');
+    if (confirmed == true) {
+      try {
+        await ProductService().deleteProduct(product.id);
+        UIFeedback.success(context, 'Producto eliminado');
+        onRefresh();
+      } catch (_) {
+        UIFeedback.error(context, 'Error al eliminar el producto');
+      }
     }
-  }
-
-  String _formatPrice(double price) {
-    return '\$ ${price.toStringAsFixed(0)}';
   }
 }

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../core/storage/session_manager.dart';
 import '../auth/login_page.dart';
+import '../cart/presentation/cart_page.dart';
 import '../products/presentation/product_list_page.dart';
 import '../products/presentation/create_product_page.dart';
-
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -14,18 +14,31 @@ class HomePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Global de Maquinaria y Lubricantes'),
         actions: [
+          // 🛒 Carrito
+          IconButton(
+            icon: const Icon(Icons.shopping_cart),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const CartPage(),
+                ),
+              );
+            },
+          ),
+
+          // 🚪 Logout
           IconButton(
             icon: const Icon(Icons.logout),
-              onPressed: () async {
-                await SessionManager.clear();
-                if (!context.mounted) return;
+            onPressed: () async {
+              await SessionManager.clear();
+              if (!context.mounted) return;
 
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginPage()),
-                );
-              }
-
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginPage()),
+              );
+            },
           ),
         ],
       ),
@@ -39,8 +52,6 @@ class HomePage extends StatelessWidget {
 
             final role = snapshot.data ?? 'cliente';
 
-
-
             return Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -48,14 +59,13 @@ class HomePage extends StatelessWidget {
                   'Bienvenido a GML',
                   style: TextStyle(fontSize: 20),
                 ),
-
                 const SizedBox(height: 12),
 
                 _roleBadge(role),
 
                 const SizedBox(height: 30),
 
-                // 🔹 Ver productos (todos)
+                // 🔹 Ver productos
                 SizedBox(
                   width: 220,
                   child: ElevatedButton.icon(
@@ -74,7 +84,7 @@ class HomePage extends StatelessWidget {
 
                 const SizedBox(height: 16),
 
-                // 🔹 Botón solo admin
+                // 🔹 Solo admin
                 if (role == 'admin')
                   SizedBox(
                     width: 220,
@@ -89,7 +99,6 @@ class HomePage extends StatelessWidget {
                       },
                       child: const Text('+ Crear producto'),
                     ),
-
                   ),
               ],
             );
@@ -99,7 +108,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _roleBadge(String? role) {
+  Widget _roleBadge(String role) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
