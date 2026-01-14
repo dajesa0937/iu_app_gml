@@ -1,5 +1,5 @@
-import '../domain/cart_item.dart';
 import '../../products/domain/product_model.dart';
+import '../domain/cart_item.dart';
 
 class CartService {
   static final CartService _instance = CartService._internal();
@@ -10,26 +10,35 @@ class CartService {
 
   List<CartItem> get items => _items;
 
+  // ➕ Agregar producto
   void addProduct(Product product) {
-    final index =
-    _items.indexWhere((item) => item.product.id == product.id);
+    final index = _items.indexWhere(
+          (item) => item.product.id == product.id,
+    );
 
     if (index >= 0) {
       _items[index].quantity++;
     } else {
-      _items.add(CartItem(product: product));
+      _items.add(CartItem(product: product, quantity: 1));
     }
   }
 
+  // ➕ Aumentar cantidad
   void increase(Product product) {
-    final item =
-    _items.firstWhere((e) => e.product.id == product.id);
-    item.quantity++;
+    final index = _items.indexWhere(
+          (item) => item.product.id == product.id,
+    );
+
+    if (index >= 0) {
+      _items[index].quantity++;
+    }
   }
 
+  // ➖ Disminuir cantidad
   void decrease(Product product) {
-    final index =
-    _items.indexWhere((e) => e.product.id == product.id);
+    final index = _items.indexWhere(
+          (item) => item.product.id == product.id,
+    );
 
     if (index >= 0) {
       if (_items[index].quantity > 1) {
@@ -40,14 +49,23 @@ class CartService {
     }
   }
 
+  // ❌ Eliminar producto
   void removeProduct(Product product) {
-    _items.removeWhere((e) => e.product.id == product.id);
+    _items.removeWhere(
+          (item) => item.product.id == product.id,
+    );
   }
 
-  double get total =>
-      _items.fold(0, (sum, item) => sum + item.subtotal);
-
+  // 🧹 Vaciar carrito
   void clear() {
     _items.clear();
+  }
+
+  // 💰 Total
+  double get total {
+    return _items.fold(
+      0,
+          (sum, item) => sum + item.subtotal,
+    );
   }
 }

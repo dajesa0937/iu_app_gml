@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/ui/empty_state.dart';
+import '../../../core/ui/ui_feedback.dart';
 import '../data/cart_service.dart';
+import '../data/order_service.dart';
 import '../domain/cart_item.dart';
 
 const String gmlWhatsAppNumber = '573108394870';
@@ -17,13 +19,13 @@ class CartPage extends StatefulWidget {
 class _CartPageState extends State<CartPage> {
   final CartService _cart = CartService();
 
-  String _buildWhatsAppMessage(List<CartItem> items) {
+  String _buildWhatsAppMessage(List<CartItem> items, String orderId) {
     double total = 0;
     final buffer = StringBuffer();
 
     buffer.writeln('Hola 👋');
-    buffer.writeln('Quiero realizar el siguiente pedido:\n');
-    buffer.writeln('🛒 *Pedido GML*');
+    buffer.writeln('Pedido *GML*');
+    buffer.writeln('🧾 Pedido N°: *$orderId*\n');
 
     for (final item in items) {
       final subtotal = item.subtotal;
@@ -34,29 +36,10 @@ class _CartPageState extends State<CartPage> {
       );
     }
 
-    buffer.writeln('\n💰 *Total:* \$${total.toStringAsFixed(0)}');
+    buffer.writeln('\n💰 Total: \$${total.toStringAsFixed(0)}');
     buffer.writeln('\nGracias.');
 
     return buffer.toString();
-  }
-
-  Future<void> _sendToWhatsApp() async {
-    final message = Uri.encodeComponent(
-      _buildWhatsAppMessage(_cart.items),
-    );
-
-    final url =
-    Uri.parse('https://wa.me/$gmlWhatsAppNumber?text=$message');
-
-    if (await canLaunchUrl(url)) {
-      await launchUrl(
-        url,
-        mode: LaunchMode.externalApplication,
-      );
-
-      _cart.clear();
-      setState(() {});
-    }
   }
 
   @override
@@ -82,7 +65,7 @@ class _CartPageState extends State<CartPage> {
                 return ListTile(
                   title: Text(item.product.name),
                   subtitle: Text(
-                    '\$${item.product.price.toStringAsFixed(0)} c/u',
+                    'Cantidad: ${item.quantity} · \$${item.subtotal.toStringAsFixed(0)}',
                   ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -135,9 +118,48 @@ class _CartPageState extends State<CartPage> {
                 ),
                 const SizedBox(height: 12),
                 ElevatedButton(
-                  onPressed: _sendToWhatsApp,
-                  child:
-                  const Text('Confirmar pedido por WhatsApp'),
+                  onPressed: () async {
+                    if (_cart.items.isEmpty) {
+                      UIFeedback.error(
+                        context,
+                        'El carrito está vacío',
+                      );
+                      return;
+                    }
+
+                    try {
+                      final orderService = OrderService();
+
+                      // 1️⃣ Crear pedido en backend
+                      final orderId =
+                      await orderService.createOrder(_cart.items);
+
+                      // 2️⃣ Construir mensaje WhatsApp
+                      final message = Uri.encodeComponent(
+                        _buildWhatsAppMessage(_cart.items, orderId),
+                      );
+
+                      final url = Uri.parse(
+                        'https://wa.me/$gmlWhatsAppNumber?text=$message',
+                      );
+
+                      // 3️⃣ Limpiar carrito
+                      _cart.clear();
+                      setState(() {});
+
+                      // 4️⃣ Abrir WhatsApp
+                      await launchUrl(
+                        url,
+                        mode: LaunchMode.externalApplication,
+                      );
+                    } catch (e) {
+                      UIFeedback.error(
+                        context,
+                        'Error al confirmar pedido',
+                      );
+                    }
+                  },
+                  child: const Text('Confirmar pedido'),
                 ),
               ],
             ),
