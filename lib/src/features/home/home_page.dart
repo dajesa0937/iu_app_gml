@@ -4,6 +4,7 @@ import '../auth/login_page.dart';
 import '../cart/presentation/cart_page.dart';
 import '../products/presentation/product_list_page.dart';
 import '../products/presentation/create_product_page.dart';
+import '../orders/presentation/admin_orders_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -59,13 +60,14 @@ class HomePage extends StatelessWidget {
                   'Bienvenido a GML',
                   style: TextStyle(fontSize: 20),
                 ),
+
                 const SizedBox(height: 12),
 
                 _roleBadge(role),
 
                 const SizedBox(height: 30),
 
-                // 🔹 Ver productos
+                // 🔹 Ver productos (todos)
                 SizedBox(
                   width: 220,
                   child: ElevatedButton.icon(
@@ -84,11 +86,13 @@ class HomePage extends StatelessWidget {
 
                 const SizedBox(height: 16),
 
-                // 🔹 Solo admin
+                // 👑 ADMIN – Crear producto
                 if (role == 'admin')
                   SizedBox(
                     width: 220,
-                    child: ElevatedButton(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.add),
+                      label: const Text('Crear producto'),
                       onPressed: () {
                         Navigator.push(
                           context,
@@ -97,7 +101,26 @@ class HomePage extends StatelessWidget {
                           ),
                         );
                       },
-                      child: const Text('+ Crear producto'),
+                    ),
+                  ),
+
+                const SizedBox(height: 16),
+
+                // 📦 ADMIN – Ver pedidos (C2.4)
+                if (role == 'admin')
+                  SizedBox(
+                    width: 220,
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.receipt_long),
+                      label: const Text('Ver pedidos'),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AdminOrdersPage(),
+                          ),
+                        );
+                      },
                     ),
                   ),
               ],
